@@ -1,6 +1,7 @@
 package currencyconverter.controller;
 
 import currencyconverter.dto.AmountDto;
+import currencyconverter.dto.AmountTargetCurrencyDto;
 import currencyconverter.dto.ResponseDto;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -37,15 +38,32 @@ public class CurrencyConverterController {
         }
     }
 
-    @PostMapping("/convert-usd-ils")
-    public String convertUsdIls(@RequestBody AmountDto amount) throws URISyntaxException {
-        //System.out.println(amount);
-        //System.out.println(amount.getAmount());
-        Double usdRate = getRate("USD");
-        Double ilsRate = getRate("ILS");
-        if (amount == null || amount.getAmount() == null || usdRate == null || usdRate == 0 || ilsRate == null) {
+    private String conversion(Double amount, String fromCurrency, String toCurrency) throws URISyntaxException {
+        if (amount == null || fromCurrency == null || toCurrency == null) {
+            return "Error!";
+        }
+        Double fromCurrencyRate = getRate(fromCurrency);
+        Double toCurrencyRate = getRate(toCurrency);
+        if (fromCurrencyRate == null || fromCurrencyRate == 0 || toCurrencyRate == null) {
             return "Error!!";
         }
-        return Double.valueOf(amount.getAmount() * ilsRate / usdRate).toString();
+        return Double.valueOf(amount * toCurrencyRate / fromCurrencyRate).toString();
+    }
+
+    @PostMapping("/convert-usd-ils")
+    public String convertUsdIls(@RequestBody AmountDto amount) throws URISyntaxException {
+        if (amount == null) {
+            return "Error!!";
+        }
+        return conversion(amount.getAmount(), "USD", "ILS");
+    }
+
+    @PostMapping("/convert")
+    public String convert(@RequestBody AmountTargetCurrencyDto requestData) throws URISyntaxException {
+        if (requestData == null) {
+            return "Error!!!";
+        }
+        return conversion(requestData.getAmount(), "USD", requestData.getCurrency());
     }
 }
+
