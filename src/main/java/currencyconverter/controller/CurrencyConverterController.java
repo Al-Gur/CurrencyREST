@@ -21,29 +21,31 @@ public class CurrencyConverterController {
     final String API_Access_Key = "59429518bef1b95f7dbe2fa2ad74b5ba";
     final String accessUrl = "access_key=" + API_Access_Key;
 
-
-    @PostMapping("/convert-usd-ils")
-    public String convertUsdIls(@RequestBody AmountDto amount) throws URISyntaxException {
-        //System.out.println(amount);
-        //System.out.println(amount.getAmount());
-        String url = basicUrl + "latest?" + accessUrl +  "&symbols=ILS";
+    private Double getRate(String currency) throws URISyntaxException {
+        String url = basicUrl + "latest?" + accessUrl + "&symbols=" + currency;
         //System.out.println(url);
-        RequestEntity<String> request = new RequestEntity<>(HttpMethod.GET,
-                new URI(url));
+        RequestEntity<String> request = new RequestEntity<>(HttpMethod.GET, new URI(url));
         ResponseEntity<ResponseDto> response = restTemplate.exchange(request, ResponseDto.class);
         //System.out.println(response);
         ResponseDto responseDto = response.getBody();
         if (responseDto != null) {
             Map<String, Double> rates = responseDto.getRates();
             //System.out.println(rates);
-            Double rate = rates.get("ILS");
-            if (rate != null) {
-                return Double.valueOf(rate * amount.getAmount()).toString();
-            } else {
-                return "Currency is not found!";
-            }
+            return rates.get(currency);
         } else {
-            return "Error during the request at (" + basicUrl + ") !";
+            return null;
         }
+    }
+
+    @PostMapping("/convert-usd-ils")
+    public String convertUsdIls(@RequestBody AmountDto amount) throws URISyntaxException {
+        //System.out.println(amount);
+        //System.out.println(amount.getAmount());
+        Double usdRate = getRate("USD");
+        Double ilsRate = getRate("ILS");
+        if (amount == null || amount.getAmount() == null || usdRate == null || usdRate == 0 || ilsRate == null) {
+            return "Error!!";
+        }
+        return Double.valueOf(amount.getAmount() * ilsRate / usdRate).toString();
     }
 }
